@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Digest History - PLI Weekly Digest{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>📜 Past Digests</h2>
+    {% if digests %}
+        {% for digest in digests %}
+            <div class="item">
+                <div class="item-date">
+                    {{ digest.sent_at.strftime('%A, %B %d, %Y at %I:%M %p') }}
+                </div>
+                <div class="item-title">
+                    {{ digest.digest_type|title }} Digest
+                </div>
+                <div class="item-meta">
+                    Sent to {{ digest.recipients|length if digest.recipients else 0 }} recipients
+                </div>
+                <details style="margin-top: 1rem;">
+                    <summary style="cursor: pointer; color: #003262; font-weight: 500;">
+                        View Email Content
+                    </summary>
+                    <div style="margin-top: 1rem; padding: 1rem; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                        {{ digest.content|safe }}
+                    </div>
+                </details>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #999;">No digests sent yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

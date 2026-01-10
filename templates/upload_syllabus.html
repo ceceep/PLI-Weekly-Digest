@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Syllabus - PLI Weekly Digest{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>📄 Upload Course Syllabus</h2>
+    <p style="margin-bottom: 2rem;">
+        Upload a PDF syllabus and AI will automatically extract all class sessions, assignments,
+        readings, and due dates into your digest calendar.
+    </p>
+
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="syllabus">Select Syllabus PDF:</label>
+            <input type="file" id="syllabus" name="syllabus" accept=".pdf" required>
+        </div>
+
+        <button type="submit" class="btn">Upload and Parse Syllabus</button>
+    </form>
+</div>
+
+<div class="card" style="background: #f8f9fa;">
+    <h3>How it works:</h3>
+    <ol style="margin-left: 2rem; margin-top: 1rem;">
+        <li style="margin-bottom: 0.5rem;">Upload your syllabus PDF</li>
+        <li style="margin-bottom: 0.5rem;">AI automatically extracts course information, session dates, assignments, and readings</li>
+        <li style="margin-bottom: 0.5rem;">All items are added to your calendar and weekly digest</li>
+        <li style="margin-bottom: 0.5rem;">You can edit or add custom items anytime</li>
+    </ol>
+</div>
+{% endblock %}

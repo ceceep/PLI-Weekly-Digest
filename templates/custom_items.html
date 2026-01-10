@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Items - PLI Weekly Digest{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>➕ Add Custom Item</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="title">Title *</label>
+            <input type="text" id="title" name="title" required
+                   placeholder="e.g., Venmo $20 for lunch">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description"
+                      placeholder="Additional details..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="due_date">Due Date *</label>
+            <input type="date" id="due_date" name="due_date" required>
+        </div>
+
+        <div class="form-group">
+            <label for="category">Category *</label>
+            <select id="category" name="category" required>
+                <option value="reminder">Reminder</option>
+                <option value="event">Event</option>
+                <option value="payment">Payment</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="course_id">Related Course (Optional)</label>
+            <select id="course_id" name="course_id">
+                <option value="">None</option>
+                {% for course in courses %}
+                    <option value="{{ course.id }}">{{ course.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn">Add Item</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>📌 All Custom Items</h2>
+    {% if items %}
+        {% for item in items %}
+            <div class="item {% if item.completed %}completed{% endif %}">
+                <div class="item-date">Due: {{ item.due_date.strftime('%A, %B %d, %Y') }}</div>
+                <div class="item-title">{{ item.title }}</div>
+                <div class="item-meta">Category: {{ item.category }}</div>
+                {% if item.description %}
+                    <div class="item-meta">{{ item.description }}</div>
+                {% endif %}
+                <a href="{{ url_for('toggle_complete', item_type='custom', item_id=item.id) }}"
+                   class="btn btn-secondary" style="margin-top: 0.5rem;">
+                    {% if item.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
+                </a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #999;">No custom items yet. Add one above!</p>
+    {% endif %}
+</div>
+{% endblock %}

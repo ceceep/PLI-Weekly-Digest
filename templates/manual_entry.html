@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Manual Entry - PLI Weekly Digest{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>📝 Manual Entry</h1>
+    <p>Quickly add assignments, readings, or class sessions without uploading a syllabus</p>
+</div>
+
+<div class="card">
+    <form method="POST" id="manualEntryForm">
+        <div class="form-group">
+            <label>What would you like to add?</label>
+            <select name="entry_type" id="entryType" required onchange="toggleFields()">
+                <option value="">-- Select Type --</option>
+                <option value="assignment">Assignment</option>
+                <option value="reading">Reading</option>
+                <option value="session">Class Session</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Course (optional)</label>
+            <select name="course_id">
+                <option value="">-- No specific course --</option>
+                {% for course in courses %}
+                    <option value="{{ course.id }}">{{ course.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Title *</label>
+            <input type="text" name="title" placeholder="e.g., Final Paper, Session 3: Leadership Theory" required>
+        </div>
+
+        <!-- Assignment Fields -->
+        <div id="assignmentFields" style="display: none;">
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" rows="3" placeholder="What's this assignment about?"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Due Date *</label>
+                <input type="date" name="due_date" required>
+            </div>
+            <div class="form-group">
+                <label>Points</label>
+                <input type="number" name="points" placeholder="e.g., 100">
+            </div>
+        </div>
+
+        <!-- Reading Fields -->
+        <div id="readingFields" style="display: none;">
+            <div class="form-group">
+                <label>Authors</label>
+                <input type="text" name="authors" placeholder="e.g., Smith, J. & Jones, A.">
+            </div>
+            <div class="form-group">
+                <label>Pages</label>
+                <input type="text" name="pages" placeholder="e.g., pp. 1-25">
+            </div>
+            <div class="form-group">
+                <label>Citation</label>
+                <textarea name="citation" rows="2" placeholder="Full citation (optional)"></textarea>
+            </div>
+            <div class="form-group">
+                <label>URL</label>
+                <input type="url" name="url" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label>Due Date *</label>
+                <input type="date" name="due_date" required>
+            </div>
+        </div>
+
+        <!-- Session Fields -->
+        <div id="sessionFields" style="display: none;">
+            <div class="form-group">
+                <label>Session Number</label>
+                <input type="number" name="session_number" placeholder="e.g., 3">
+            </div>
+            <div class="form-group">
+                <label>Date *</label>
+                <input type="date" name="date" required>
+            </div>
+            <div class="form-group">
+                <label>Time</label>
+                <input type="text" name="time" placeholder="e.g., 9:00am - 12:00pm">
+            </div>
+            <div class="form-group">
+                <label>Location</label>
+                <input type="text" name="location" placeholder="e.g., Room 1102">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" rows="3" placeholder="What will be covered in this session?"></textarea>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Item</button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+
+<script>
+function toggleFields() {
+    const entryType = document.getElementById('entryType').value;
+
+    // Hide all field groups
+    document.getElementById('assignmentFields').style.display = 'none';
+    document.getElementById('readingFields').style.display = 'none';
+    document.getElementById('sessionFields').style.display = 'none';
+
+    // Show relevant fields
+    if (entryType === 'assignment') {
+        document.getElementById('assignmentFields').style.display = 'block';
+    } else if (entryType === 'reading') {
+        document.getElementById('readingFields').style.display = 'block';
+    } else if (entryType === 'session') {
+        document.getElementById('sessionFields').style.display = 'block';
+    }
+}
+</script>
+
+<style>
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+</style>
+{% endblock %}

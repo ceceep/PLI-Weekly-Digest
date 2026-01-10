@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.name }} - PLI Weekly Digest{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>{{ course.name }}</h1>
+    {% if course.code %}
+        <p><strong>Course Code:</strong> {{ course.code }}</p>
+    {% endif %}
+    {% if course.instructor %}
+        <p><strong>Instructor:</strong> {{ course.instructor }}</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📅 All Sessions</h2>
+    {% if sessions %}
+        {% for session in sessions %}
+            <div class="item">
+                <div class="item-date">{{ session.date.strftime('%A, %B %d, %Y') }}</div>
+                <div class="item-title">Session {{ session.session_number }}: {{ session.title }}</div>
+                <div class="item-meta">{{ session.location }} • {{ session.time }}</div>
+                {% if session.description %}
+                    <div class="item-meta" style="margin-top: 0.5rem;">{{ session.description }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #999;">No sessions found</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📝 All Assignments</h2>
+    {% if assignments %}
+        {% for assignment in assignments %}
+            <div class="item {% if assignment.completed %}completed{% endif %}">
+                <div class="item-date">Due: {{ assignment.due_date.strftime('%A, %B %d, %Y') }}</div>
+                <div class="item-title">{{ assignment.title }}</div>
+                {% if assignment.description %}
+                    <div class="item-meta">{{ assignment.description }}</div>
+                {% endif %}
+                {% if assignment.points %}
+                    <div class="item-meta">Points: {{ assignment.points }}</div>
+                {% endif %}
+                <a href="{{ url_for('toggle_complete', item_type='assignment', item_id=assignment.id) }}"
+                   class="btn btn-secondary" style="margin-top: 0.5rem;">
+                    {% if assignment.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
+                </a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #999;">No assignments found</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📚 All Readings</h2>
+    {% if readings %}
+        {% for reading in readings %}
+            <div class="item {% if reading.completed %}completed{% endif %}">
+                <div class="item-date">Due: {{ reading.due_date.strftime('%A, %B %d, %Y') }}</div>
+                <div class="item-title">{{ reading.title }}</div>
+                {% if reading.authors %}
+                    <div class="item-meta">{{ reading.authors }}</div>
+                {% endif %}
+                {% if reading.pages %}
+                    <div class="item-meta">{{ reading.pages }}</div>
+                {% endif %}
+                {% if reading.citation %}
+                    <div class="item-meta" style="font-size: 0.85rem;">{{ reading.citation }}</div>
+                {% endif %}
+                {% if reading.url %}
+                    <div class="item-meta"><a href="{{ reading.url }}" target="_blank">Link to reading</a></div>
+                {% endif %}
+                <a href="{{ url_for('toggle_complete', item_type='reading', item_id=reading.id) }}"
+                   class="btn btn-secondary" style="margin-top: 0.5rem;">
+                    {% if reading.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
+                </a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #999;">No readings found</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">← Back to Dashboard</a>
+</div>
+{% endblock %}

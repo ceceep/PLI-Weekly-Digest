@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - PLI Weekly Digest{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="stats">
+    <div class="stat-card">
+        <div class="stat-number">{{ courses|length }}</div>
+        <div class="stat-label">Courses</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ sessions|length }}</div>
+        <div class="stat-label">Upcoming Sessions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ assignments|length }}</div>
+        <div class="stat-label">Pending Assignments</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ subscriber_count }}</div>
+        <div class="stat-label">Active Subscribers</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📅 Upcoming Class Sessions (Next 7 Days)</h2>
+    {% if sessions %}
+        {% for session in sessions %}
+            <div class="item">
+                <div class="item-date">{{ session.date.strftime('%A, %B %d, %Y') }}</div>
+                <div class="item-title">Session {{ session.session_number }}: {{ session.title }}</div>
+                <div class="item-meta">{{ session.location }} • {{ session.time }}</div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #999;">No sessions in the next 7 days</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📝 Assignments Due (Next 7 Days)</h2>
+    {% if assignments %}
+        {% for assignment in assignments %}
+            <div class="item {% if assignment.completed %}completed{% endif %}">
+                <div class="item-date">Due: {{ assignment.due_date.strftime('%A, %B %d, %Y') }}</div>
+                <div class="item-title">{{ assignment.title }}</div>
+                {% if assignment.points %}
+                    <div class="item-meta">Points: {{ assignment.points }}</div>
+                {% endif %}
+                <a href="{{ url_for('toggle_complete', item_type='assignment', item_id=assignment.id) }}"
+                   class="btn btn-secondary" style="margin-top: 0.5rem;">
+                    {% if assignment.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
+                </a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #999;">No assignments due in the next 7 days</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📚 Readings Due (Next 7 Days)</h2>
+    {% if readings %}
+        {% for reading in readings %}
+            <div class="item {% if reading.completed %}completed{% endif %}">
+                <div class="item-date">Due: {{ reading.due_date.strftime('%A, %B %d, %Y') }}</div>
+                <div class="item-title">{{ reading.title }}</div>
+                {% if reading.authors %}
+                    <div class="item-meta">{{ reading.authors }}</div>
+                {% endif %}
+                {% if reading.pages %}
+                    <div class="item-meta">{{ reading.pages }}</div>
+                {% endif %}
+                <a href="{{ url_for('toggle_complete', item_type='reading', item_id=reading.id) }}"
+                   class="btn btn-secondary" style="margin-top: 0.5rem;">
+                    {% if reading.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
+                </a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #999;">No readings due in the next 7 days</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📌 Custom Reminders (Next 7 Days)</h2>
+    {% if custom_items %}
+        {% for item in custom_items %}
+            <div class="item {% if item.completed %}completed{% endif %}" style="background: #fff3cd; border-left-color: #ffc107;">
+                <div class="item-date">Due: {{ item.due_date.strftime('%A, %B %d, %Y') }}</div>
+                <div class="item-title">{{ item.title }}</div>
+                <div class="item-meta">Category: {{ item.category }}</div>
+                {% if item.description %}
+                    <div class="item-meta">{{ item.description }}</div>
+                {% endif %}
+                <a href="{{ url_for('toggle_complete', item_type='custom', item_id=item.id) }}"
+                   class="btn btn-secondary" style="margin-top: 0.5rem;">
+                    {% if item.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
+                </a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #999;">No custom items in the next 7 days</p>
+    {% endif %}
+</div>
+
+<div class="card" style="background: #e7f3ff; border: 2px solid #003262;">
+    <h2>🚀 Quick Actions</h2>
+    <a href="{{ url_for('send_test_digest') }}" class="btn btn-success">Send Test Digest Now</a>
+    <a href="{{ url_for('preview_digest') }}" class="btn" target="_blank">Preview This Week's Digest</a>
+    <p style="margin-top: 1rem; color: #666;">
+        <strong>Next automatic digest:</strong> Sunday at 8:00am PT<br>
+        <strong>Daily reminders:</strong> Every day at 6:00pm PT
+    </p>
+</div>
+{% endblock %}
