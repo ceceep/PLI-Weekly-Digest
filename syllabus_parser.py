@@ -23,16 +23,17 @@ class SyllabusParser:
 
     def parse_syllabus(self, pdf_path):
         """Parse syllabus PDF and extract structured data"""
-        print(f"Reading PDF: {pdf_path}")
-        text = self.extract_text_from_pdf(pdf_path)
+        try:
+            print(f"Reading PDF: {pdf_path}")
+            text = self.extract_text_from_pdf(pdf_path)
 
-        print("Sending to Claude for parsing...")
-        message = self.client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=4096,
-            messages=[{
-                "role": "user",
-                "content": f"""You are a syllabus parser. Extract structured data from this course syllabus.
+            print("Sending to Claude for parsing...")
+            message = self.client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=4096,
+                messages=[{
+                    "role": "user",
+                    "content": f"""You are a syllabus parser. Extract structured data from this course syllabus.
 
 Return JSON with this structure:
 {{
@@ -78,16 +79,23 @@ Return ONLY valid JSON, no markdown formatting."""
             }]
         )
 
-        response_text = message.content[0].text
+            response_text = message.content[0].text
+            print(f"Received response from Claude ({len(response_text)} characters)")
 
-        # Remove markdown code blocks if present
-        if response_text.startswith("```"):
-            response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
+            # Remove markdown code blocks if present
+            if response_text.startswith("```"):
+                response_text = response_text.split("```")[1]
+                if response_text.startswith("json"):
+                    response_text = response_text[4:]
 
-        data = json.loads(response_text)
-        return data
+            data = json.loads(response_text)
+            print("Successfully parsed JSON response")
+            return data
+        except Exception as e:
+            print(f"ERROR in parse_syllabus: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     def import_to_database(self, syllabus_data):
         """Import parsed syllabus data into database"""
