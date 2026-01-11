@@ -258,6 +258,7 @@ def view_course(course_id):
 
 
 @app.route('/custom_items', methods=['GET', 'POST'])
+@require_auth
 def custom_items():
     """Manage custom items (reminders, events, etc.)"""
     db = get_db_session()
