@@ -764,6 +764,30 @@ def import_educ263b():
     return redirect(url_for('index'))
 
 
+@app.route('/cleanup_2025_dates')
+@require_auth
+def cleanup_2025_dates():
+    """Remove any custom items with 2025 dates"""
+    try:
+        from datetime import datetime
+
+        db = get_db_session()
+
+        # Delete all items with dates before 2026
+        deleted = db.query(CustomItem).filter(
+            CustomItem.due_date < datetime(2026, 1, 1).date()
+        ).delete()
+
+        db.commit()
+        db.close()
+
+        flash(f'Successfully deleted {deleted} item(s) with 2025 dates!', 'success')
+    except Exception as e:
+        flash(f'Error cleaning up dates: {str(e)}', 'error')
+
+    return redirect(url_for('index'))
+
+
 @app.route('/import_pli_calendar')
 @require_auth
 def import_pli_calendar():
@@ -774,7 +798,7 @@ def import_pli_calendar():
         db = get_db_session()
 
         events_data = [
-            {"title": "Cal APA Scores released", "date": "2025-12-29", "description": "December Cal APA Scores released", "category": "Program Event"},
+            # Removed 2025-12-29 date - only 2026 dates
             {"title": "PLI Spring Orientation Session", "date": "2026-01-07", "description": "Zoom 5-7pm, Meeting ID: 3726372789", "category": "Program Event"},
             {"title": "UCB Spring Semester Begins", "date": "2026-01-13", "description": "University of California Berkeley Spring Semester starts", "category": "Program Event"},
             {"title": "Cal APA Deadline", "date": "2026-01-15", "description": "Cal APA submission deadline", "category": "Deadline"},
