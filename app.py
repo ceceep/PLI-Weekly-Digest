@@ -1,10 +1,11 @@
 """
 Flask web application for PLI Weekly Digest
 """
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
+from functools import wraps
 from models import (
     Course, Session, Assignment, Reading, CustomItem, Subscriber, DigestHistory,
     get_session as get_db_session, init_db
@@ -20,6 +21,18 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Admin password
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', '19PLI89!')
+
+# Authentication decorator
+def require_auth(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('authenticated'):
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Initialize database
 init_db()
@@ -48,6 +61,30 @@ scheduler.add_job(
 )
 
 scheduler.start()
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Admin login page"""
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == ADMIN_PASSWORD:
+            session['authenticated'] = True
+            next_url = request.args.get('next') or url_for('index')
+            flash('Successfully logged in!', 'success')
+            return redirect(next_url)
+        else:
+            flash('Incorrect password', 'error')
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    """Logout"""
+    session.pop('authenticated', None)
+    flash('Logged out successfully', 'success')
+    return redirect(url_for('index'))
 
 
 @app.route('/')
@@ -97,6 +134,7 @@ def index():
 
 
 @app.route('/upload_syllabus', methods=['GET', 'POST'])
+@require_auth
 def upload_syllabus():
     """Upload and parse a syllabus"""
     if request.method == 'POST':
@@ -137,6 +175,7 @@ def upload_syllabus():
 
 
 @app.route('/manual_entry', methods=['GET', 'POST'])
+@require_auth
 def manual_entry():
     """Manually add assignments and readings"""
     db = get_db_session()
@@ -313,6 +352,7 @@ def subscribe():
 
 
 @app.route('/subscribers', methods=['GET', 'POST'])
+@require_auth
 def subscribers():
     """Manage email subscribers"""
     db = get_db_session()
