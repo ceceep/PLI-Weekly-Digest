@@ -22,8 +22,10 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Admin password
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', '19PLI89!')
+# Admin password (MUST be set in environment variables or .env file)
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+if not ADMIN_PASSWORD:
+    raise ValueError("ADMIN_PASSWORD must be set in environment variables or .env file")
 
 # Authentication decorator
 def require_auth(f):
