@@ -1197,6 +1197,49 @@ def add_missing_263b_readings():
     return redirect(url_for('index'))
 
 
+@app.route('/add_cohort25_subscribers')
+@require_auth
+def add_cohort25_subscribers():
+    """Add PLI Cohort 25 subscribers"""
+    try:
+        db = get_db_session()
+
+        # List of email addresses to add
+        emails = [
+            "daechelle_m@berkeley.edu",
+            "k_yoshiispiegelman@berkeley.edu",
+            "rosandoval@berkeley.edu",
+            "snapoliellocheveres@berkeley.edu",
+            "youngsarah00@berkeley.edu",
+            "jrwoo10102414@berkeley.edu",
+            "juamolin@berkeley.edu",
+            "evabeleche@berkeley.edu",
+            "yschang@berkeley.edu",
+            "leangelo.acuna@berkeley.edu",
+            "lenagarcia@berkeley.edu",
+            "luz_salazar-Jed@berkeley.edu"
+        ]
+
+        # Check which ones already exist
+        existing_emails = {s.email.lower() for s in db.query(Subscriber).all()}
+        added_count = 0
+
+        for email in emails:
+            if email.lower() not in existing_emails:
+                subscriber = Subscriber(email=email, subscribed_at=datetime.utcnow())
+                db.add(subscriber)
+                added_count += 1
+
+        db.commit()
+        db.close()
+
+        flash(f'Successfully added {added_count} new subscribers! (Total: {len(emails)})', 'success')
+    except Exception as e:
+        flash(f'Error adding subscribers: {str(e)}', 'error')
+
+    return redirect(url_for('index'))
+
+
 if __name__ == '__main__':
     # Get port from environment variable (for cloud deployment) or default to 5000
     port = int(os.getenv('PORT', 5000))
