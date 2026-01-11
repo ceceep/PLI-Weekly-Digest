@@ -280,6 +280,38 @@ def toggle_complete(item_type, item_id):
     return redirect(request.referrer or url_for('index'))
 
 
+@app.route('/subscribe', methods=['GET', 'POST'])
+def subscribe():
+    """Public subscription page for classmates"""
+    db = get_db_session()
+
+    if request.method == 'POST':
+        email = request.form['email']
+        name = request.form.get('name', '')
+
+        # Check if already exists
+        existing = db.query(Subscriber).filter(Subscriber.email == email).first()
+
+        if existing:
+            if existing.active:
+                flash('You are already subscribed! Check your email for digests every Sunday at 8am.', 'warning')
+            else:
+                existing.active = True
+                db.commit()
+                flash('Welcome back! Your subscription has been reactivated.', 'success')
+        else:
+            subscriber = Subscriber(email=email, name=name)
+            db.add(subscriber)
+            db.commit()
+            flash('Success! You are now subscribed. Check your email for the weekly digest every Sunday at 8am PT.', 'success')
+
+        db.close()
+        return redirect(url_for('subscribe'))
+
+    db.close()
+    return render_template('subscribe.html')
+
+
 @app.route('/subscribers', methods=['GET', 'POST'])
 def subscribers():
     """Manage email subscribers"""
@@ -347,6 +379,32 @@ def preview_digest():
     html_content = generator.generate_weekly_html(items)
 
     return html_content
+
+
+@app.route('/calendar')
+def calendar():
+    """Year-at-a-glance calendar view"""
+    db = get_db_session()
+
+    # Get all items for the entire academic year
+    today = datetime.now().date()
+
+    # Get sessions, assignments, readings, custom items
+    sessions = db.query(Session).order_by(Session.date).all()
+    assignments = db.query(Assignment).order_by(Assignment.due_date).all()
+    readings = db.query(Reading).order_by(Reading.due_date).all()
+    custom_items = db.query(CustomItem).order_by(CustomItem.due_date).all()
+    courses = db.query(Course).all()
+
+    db.close()
+
+    return render_template('calendar.html',
+                         sessions=sessions,
+                         assignments=assignments,
+                         readings=readings,
+                         custom_items=custom_items,
+                         courses=courses,
+                         today=today)
 
 
 @app.route('/send_test_digest')

@@ -186,6 +186,14 @@ class GmailDigestGenerator:
         else:
             html += '<div class="empty">No special reminders this week</div>'
 
+        # Calendar link
+        html += """
+    <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+        <p style="font-size: 16px; margin-bottom: 10px; font-weight: bold;">📅 Want to see the big picture?</p>
+        <a href="http://localhost:5001/calendar" style="display: inline-block; padding: 12px 24px; background: #003262; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">View Year at a Glance</a>
+    </div>
+"""
+
         # Footer
         html += """
     <div class="footer">

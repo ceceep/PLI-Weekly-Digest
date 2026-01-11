@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}Year at a Glance - PLI Weekly Digest{% endblock %}
+
+{% block content %}
+<style>
+    .calendar-header {
+        background: linear-gradient(135deg, #003262 0%, #005a9c 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .calendar-header h1 {
+        color: white;
+        border: none;
+        margin: 0;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 50px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #FDB515;
+    }
+
+    .month-section {
+        margin-bottom: 3rem;
+    }
+
+    .month-header {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #003262;
+        margin-bottom: 1rem;
+        padding-left: 0;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+        padding-left: 30px;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -30px;
+        top: 8px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #FDB515;
+        z-index: 1;
+    }
+
+    .timeline-item.session::before {
+        border-color: #003262;
+    }
+
+    .timeline-item.assignment::before {
+        border-color: #dc3545;
+    }
+
+    .timeline-item.reading::before {
+        border-color: #28a745;
+    }
+
+    .timeline-item.custom::before {
+        border-color: #ffc107;
+    }
+
+    .timeline-item.today::before {
+        background: #FDB515;
+        width: 16px;
+        height: 16px;
+        left: -32px;
+        top: 6px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(253, 181, 21, 0.7); }
+        50% { box-shadow: 0 0 0 10px rgba(253, 181, 21, 0); }
+    }
+
+    .timeline-date {
+        font-weight: bold;
+        color: #003262;
+        font-size: 0.95rem;
+    }
+
+    .timeline-content {
+        background: white;
+        padding: 1rem;
+        border-radius: 6px;
+        border-left: 4px solid #FDB515;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .timeline-item.session .timeline-content {
+        border-left-color: #003262;
+    }
+
+    .timeline-item.assignment .timeline-content {
+        border-left-color: #dc3545;
+    }
+
+    .timeline-item.reading .timeline-content {
+        border-left-color: #28a745;
+    }
+
+    .timeline-item.custom .timeline-content {
+        border-left-color: #ffc107;
+    }
+
+    .timeline-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .timeline-meta {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .type-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+
+    .badge-session {
+        background: #e3f2fd;
+        color: #003262;
+    }
+
+    .badge-assignment {
+        background: #ffebee;
+        color: #dc3545;
+    }
+
+    .badge-reading {
+        background: #e8f5e9;
+        color: #28a745;
+    }
+
+    .badge-custom {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .legend {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 8px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 3px solid;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #003262;
+    }
+
+    .stat-label {
+        color: #666;
+        margin-top: 0.5rem;
+    }
+
+    .course-filter {
+        margin-bottom: 2rem;
+    }
+
+    .filter-btn {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        border: 2px solid #003262;
+        border-radius: 20px;
+        background: white;
+        color: #003262;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+        background: #003262;
+        color: white;
+    }
+</style>
+
+<div class="calendar-header">
+    <h1>📅 Year at a Glance</h1>
+    <p>All your PLI assignments, readings, and sessions in one place</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-box">
+        <div class="stat-number">{{ sessions|length }}</div>
+        <div class="stat-label">Class Sessions</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-number">{{ assignments|length }}</div>
+        <div class="stat-label">Assignments</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-number">{{ readings|length }}</div>
+        <div class="stat-label">Readings</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-number">{{ custom_items|length }}</div>
+        <div class="stat-label">Custom Items</div>
+    </div>
+</div>
+
+<div class="legend card">
+    <div class="legend-item">
+        <div class="legend-dot" style="border-color: #003262;"></div>
+        <span>Class Sessions</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot" style="border-color: #dc3545;"></div>
+        <span>Assignments</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot" style="border-color: #28a745;"></div>
+        <span>Readings</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot" style="border-color: #ffc107;"></div>
+        <span>Custom Items</span>
+    </div>
+</div>
+
+{% if courses %}
+<div class="course-filter card">
+    <h3>Filter by Course:</h3>
+    <button class="filter-btn active" onclick="filterCourse('all')">All Courses</button>
+    {% for course in courses %}
+        <button class="filter-btn" onclick="filterCourse('{{ course.id }}')">{{ course.name }}</button>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="timeline">
+        {% set current_month = None %}
+        {% set all_items = [] %}
+
+        {# Combine all items into one list with dates #}
+        {% for session in sessions %}
+            {% set _ = all_items.append({'date': session.date, 'type': 'session', 'item': session}) %}
+        {% endfor %}
+        {% for assignment in assignments %}
+            {% set _ = all_items.append({'date': assignment.due_date, 'type': 'assignment', 'item': assignment}) %}
+        {% endfor %}
+        {% for reading in readings %}
+            {% set _ = all_items.append({'date': reading.due_date, 'type': 'reading', 'item': reading}) %}
+        {% endfor %}
+        {% for custom in custom_items %}
+            {% set _ = all_items.append({'date': custom.due_date, 'type': 'custom', 'item': custom}) %}
+        {% endfor %}
+
+        {# Sort all items by date #}
+        {% set sorted_items = all_items|sort(attribute='date') %}
+
+        {% for entry in sorted_items %}
+            {% set item = entry.item %}
+            {% set item_date = entry.date %}
+            {% set item_type = entry.type %}
+
+            {# Check if we need a new month header #}
+            {% if item_date.strftime('%Y-%m') != current_month %}
+                {% set current_month = item_date.strftime('%Y-%m') %}
+                <div class="month-header">{{ item_date.strftime('%B %Y') }}</div>
+            {% endif %}
+
+            <div class="timeline-item {{ item_type }} {% if item_date == today %}today{% endif %}" data-course="{% if item.course_id %}{{ item.course_id }}{% else %}none{% endif %}">
+                <div class="timeline-date">{{ item_date.strftime('%A, %B %d') }}</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">
+                        <span class="type-badge badge-{{ item_type }}">
+                            {% if item_type == 'session' %}📅 Session
+                            {% elif item_type == 'assignment' %}📝 Assignment
+                            {% elif item_type == 'reading' %}📚 Reading
+                            {% else %}📌 {{ item.category|title }}
+                            {% endif %}
+                        </span>
+                        {{ item.title }}
+                    </div>
+
+                    {% if item_type == 'session' %}
+                        <div class="timeline-meta">
+                            {{ item.location }} • {{ item.time }}
+                            {% if item.description %}
+                                <br>{{ item.description }}
+                            {% endif %}
+                        </div>
+                    {% elif item_type == 'assignment' %}
+                        <div class="timeline-meta">
+                            {% if item.description %}{{ item.description }}<br>{% endif %}
+                            {% if item.points %}Points: {{ item.points }}{% endif %}
+                            {% if item.completed %}<strong style="color: #28a745;">✓ Completed</strong>{% endif %}
+                        </div>
+                    {% elif item_type == 'reading' %}
+                        <div class="timeline-meta">
+                            {% if item.authors %}{{ item.authors }}<br>{% endif %}
+                            {% if item.pages %}{{ item.pages }}{% endif %}
+                            {% if item.completed %}<br><strong style="color: #28a745;">✓ Completed</strong>{% endif %}
+                        </div>
+                    {% elif item_type == 'custom' %}
+                        <div class="timeline-meta">
+                            {% if item.description %}{{ item.description }}{% endif %}
+                            {% if item.completed %}<br><strong style="color: #28a745;">✓ Completed</strong>{% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        {% if not sorted_items %}
+            <p style="color: #999; text-align: center; padding: 2rem;">
+                No items yet. Upload a syllabus or add items manually to see your timeline!
+            </p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">← Back to Dashboard</a>
+</div>
+
+<script>
+function filterCourse(courseId) {
+    // Update active button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Show/hide items
+    document.querySelectorAll('.timeline-item').forEach(item => {
+        if (courseId === 'all') {
+            item.style.display = 'block';
+        } else if (item.dataset.course === courseId) {
+            item.style.display = 'block';
+        } else if (courseId === 'none' && item.dataset.course === 'none') {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+</script>
+
+{% endblock %}

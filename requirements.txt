@@ -6,3 +6,4 @@ APScheduler==3.10.4
 sendgrid==6.11.0
 sqlalchemy==2.0.25
 gunicorn==21.2.0
+pytz==2023.3
