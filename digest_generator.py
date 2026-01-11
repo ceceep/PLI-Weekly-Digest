@@ -248,19 +248,14 @@ class DigestGenerator:
         print(f"Weekly digest sent to {len(recipient_emails)} subscribers")
 
     def send_daily_reminder(self):
-        """Send daily reminder for items due tomorrow"""
+        """Send daily reminder for assignments due tomorrow (excludes readings)"""
         db = get_session()
         tomorrow = (datetime.now() + timedelta(days=1)).date()
 
-        # Get items due tomorrow
+        # Get items due tomorrow (assignments and custom items only, no readings)
         assignments = db.query(Assignment).filter(
             Assignment.due_date == tomorrow,
             Assignment.completed == False
-        ).all()
-
-        readings = db.query(Reading).filter(
-            Reading.due_date == tomorrow,
-            Reading.completed == False
         ).all()
 
         custom_items = db.query(CustomItem).filter(
@@ -268,8 +263,8 @@ class DigestGenerator:
             CustomItem.completed == False
         ).all()
 
-        if not (assignments or readings or custom_items):
-            print("Nothing due tomorrow")
+        if not (assignments or custom_items):
+            print("No assignments due tomorrow")
             db.close()
             return
 
@@ -302,11 +297,6 @@ class DigestGenerator:
             html += "<h2>Assignments:</h2>"
             for a in assignments:
                 html += f'<div class="item">{a.title}</div>'
-
-        if readings:
-            html += "<h2>Readings:</h2>"
-            for r in readings:
-                html += f'<div class="item">{r.title}</div>'
 
         if custom_items:
             html += "<h2>Reminders:</h2>"
