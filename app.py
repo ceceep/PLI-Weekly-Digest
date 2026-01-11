@@ -658,6 +658,112 @@ def import_educ460a():
     return redirect(url_for('index'))
 
 
+@app.route('/import_educ263b')
+@require_auth
+def import_educ263b():
+    """Import EDUC 263B syllabus data"""
+    try:
+        from datetime import datetime
+
+        db = get_db_session()
+
+        # Check if course already exists
+        existing = db.query(Course).filter(Course.code == "EDUC 263B").first()
+        if existing:
+            flash('EDUC 263B already imported!', 'warning')
+            db.close()
+            return redirect(url_for('index'))
+
+        # Create course
+        course = Course(
+            name="Legal and Policy Issues in Urban Education",
+            code="EDUC 263B",
+            instructor="Shannon Woo Williams-Zou"
+        )
+        db.add(course)
+        db.flush()
+
+        # Create sessions
+        sessions_data = [
+            (1, "Introduction to the Course and Critical Race Theory", "2026-01-10", "9-12", "In person, room 1102", "Begin to build our learning community, establish a general understanding of CRT"),
+            (2, "Inequity by Design: Race & the American Public Education System", "2026-01-10", "1-4", "In Person, room 1102", "Explore CRT's application to Education and identify institutional practices"),
+            (3, "Intro to Student Discipline", "2026-01-26", "6-9", "In person, room 1102", "Increase understanding of school discipline laws"),
+            (4, "Investigations & Implicit Bias in Student Discipline", "2026-02-02", "6-9", "Virtual", "Learn how to conduct a student disciplinary investigation"),
+            (5, "Discipline of Students with Disabilities", "2026-02-09", "6-9", "Virtual", "Increased understanding of special education discipline laws"),
+            (6, "Student Removals: Manifestation Determination & Expulsion Hearings", "2026-02-17", "6-9", "Virtual", "Learn how to prepare an expulsion packet"),
+            (7, "Intro to Dis/ability Critical Race Studies (DisCrit) & Special Education Law", "2026-02-23", "6-9", "In person, room 1102", "Consider the implications that Dis/Crit has for our work"),
+            (8, "Intro to the IEP Process and Section 504 of the Rehabilitation Act", "2026-03-09", "6-9", "Virtual", "Learn the components of a compliant IEP"),
+            (9, "IEP Process and Section 504, Part 2: Role Plays", "2026-03-16", "6-9", "In person, room 1102", "Practical application through role plays"),
+            (10, "Proactively Building Strong Communities: Restorative Practices & Anti-Bullying", "2026-03-23", "6-9", "Virtual", "Learn the basic principles and structures of restorative practices"),
+            (11, "Harassment and Anti-discrimination", "2026-04-06", "6-9", "In person, room 1102", "Increase understanding of federal harassment and anti-discrimination laws"),
+            (12, "Mock manifestation determination and expulsion hearing", "2026-04-13", "6-9", "In person, room 1102", "In-class performance task with mandatory attendance"),
+            (13, "Mock Re-entry Circle & Course Closing Circle", "2026-04-20", "6-9", "In person, room 1102", "In-class performance task with mandatory attendance")
+        ]
+
+        for session_num, title, date_str, time, location, desc in sessions_data:
+            session_obj = Session(
+                course_id=course.id,
+                session_number=session_num,
+                title=title,
+                date=datetime.strptime(date_str, '%Y-%m-%d').date(),
+                time=time,
+                location=location,
+                description=desc
+            )
+            db.add(session_obj)
+
+        # Create assignments
+        assignments_data = [
+            ("Discipline Hypo #1", "Apply discipline laws to hypothetical situation using IRAC format", "2026-02-02", 100),
+            ("Implicit Bias Reflection #1", "Reflection on implicit bias in disciplinary situations", "2026-02-09", 100),
+            ("Discipline Hypo #2", "Apply discipline laws to hypothetical situation", "2026-02-17", 100),
+            ("Complex Discipline Hypo: Implicit Bias Reflection component", "Bias reflection component of the complex discipline hypo analysis", "2026-02-23", 100),
+            ("Complex Discipline Hypo: Final Group Analysis paper", "Culminating group project analyzing complex disciplinary scenario", "2026-03-16", 200),
+            ("Complex Discipline Hypo: Mock Expulsion & Manifestation Determination Hearings", "Documents and preparation for mock hearings", "2026-04-06", 300),
+            ("Complex Discipline Hypo: Mock Re-entry Circle", "Participation in mock restorative re-entry circle", "2026-04-13", 100),
+            ("End of semester reflection", "Final reflection on course learning", "2026-04-18", 100)
+        ]
+
+        for title, desc, due_date_str, points in assignments_data:
+            assignment = Assignment(
+                course_id=course.id,
+                title=title,
+                description=desc,
+                due_date=datetime.strptime(due_date_str, '%Y-%m-%d').date(),
+                points=points
+            )
+            db.add(assignment)
+
+        # Create readings
+        readings_data = [
+            ("Special education and the law: A guide for practitioners", "Osborne, A. G., Russo, C. J., Lavoie, R. D., & Eckes, S.", "pp. 2-4", "2026-01-10", ""),
+            ("Introduction and Hallmark Critical Race Theory Themes", "Delgado, R., Stefancic, J., & Harris, A. P.", "", "2026-01-10", ""),
+            ("Improving Student Achievement Through the Creation of Relationships", "Dome, D.", "", "2026-01-10", ""),
+            ("California Education Code", "", "Sections 48900 – 48927", "2026-01-26", ""),
+            ("Student Discipline Resource Binder", "Dome, D.", "Chapters 1-4", "2026-01-26", "")
+        ]
+
+        for title, authors, pages, due_date_str, url in readings_data:
+            reading = Reading(
+                course_id=course.id,
+                title=title,
+                authors=authors,
+                pages=pages,
+                due_date=datetime.strptime(due_date_str, '%Y-%m-%d').date(),
+                url=url
+            )
+            db.add(reading)
+
+        db.commit()
+        db.close()
+
+        flash('Successfully imported EDUC 263B with 13 sessions, 8 assignments, and 5 readings!', 'success')
+    except Exception as e:
+        flash(f'Error importing EDUC 263B: {str(e)}', 'error')
+
+    return redirect(url_for('index'))
+
+
 if __name__ == '__main__':
     # Get port from environment variable (for cloud deployment) or default to 5000
     port = int(os.getenv('PORT', 5000))
