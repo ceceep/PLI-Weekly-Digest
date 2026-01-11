@@ -127,6 +127,11 @@ class DigestHistory(Base):
 def get_engine():
     """Get database engine"""
     database_url = os.getenv('DATABASE_URL', 'sqlite:///pli_digest.db')
+
+    # Fix for Render PostgreSQL URLs (they use postgres:// but SQLAlchemy needs postgresql://)
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
     return create_engine(database_url)
 
 
