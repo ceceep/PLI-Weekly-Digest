@@ -595,11 +595,11 @@ def import_educ460a():
 
         # Create sessions
         sessions_data = [
-            (1, "Spring Overview, PLI Mid Year Coach/Coachee Reflection Questions, Planning for Summer Internships", "2025-01-24", "9am-noon", "In person, BWW 1203", "Spring Overview, PLI Mid Year Coach/Coachee Reflection Questions, Planning for Summer Internships, Check-In w/ Spring Home Group, Portfolios Ongoing reflection"),
-            (2, "Mock Interview Prep and Practice", "2025-02-21", "1-4pm", "In person, BWW 1203", "Mock Interview Prep and Practice, What is a Mock Interview? How do you present as a leader? Resume tuning, More Metaphors, Internships, Summer Internship Resources & Guidelines"),
-            (3, "Mock Interviews", "2025-03-07", "1-4pm (Mock Interviews 9am-noon)", "In person, BWW 1203", "Students will participate in Mock Interviews for the first half of the day. Class in the afternoon following Mock Interviews. Debrief & Reflection, Metaphors"),
-            (4, "Leadership Experiences, Metaphor & Rubric Task", "2025-04-04", "1-4pm", "In person, BWW 1203", "C25 Leadership Experiences, Metaphor & Rubric Task (in-class-due April 4, by 5pm)"),
-            (5, "Spring Portfolio", "2025-04-27", "6-9pm", "Online (zoom)", "Spring Portfolio, Sneak Peak at Summer 2026")
+            (1, "Spring Overview, PLI Mid Year Coach/Coachee Reflection Questions, Planning for Summer Internships", "2026-01-24", "9am-noon", "In person, BWW 1203", "Spring Overview, PLI Mid Year Coach/Coachee Reflection Questions, Planning for Summer Internships, Check-In w/ Spring Home Group, Portfolios Ongoing reflection"),
+            (2, "Mock Interview Prep and Practice", "2026-02-21", "1-4pm", "In person, BWW 1203", "Mock Interview Prep and Practice, What is a Mock Interview? How do you present as a leader? Resume tuning, More Metaphors, Internships, Summer Internship Resources & Guidelines"),
+            (3, "Mock Interviews", "2026-03-07", "1-4pm (Mock Interviews 9am-noon)", "In person, BWW 1203", "Students will participate in Mock Interviews for the first half of the day. Class in the afternoon following Mock Interviews. Debrief & Reflection, Metaphors"),
+            (4, "Leadership Experiences, Metaphor & Rubric Task", "2026-04-04", "1-4pm", "In person, BWW 1203", "C25 Leadership Experiences, Metaphor & Rubric Task (in-class-due April 4, by 5pm)"),
+            (5, "Spring Portfolio", "2026-04-27", "6-9pm", "Online (zoom)", "Spring Portfolio, Sneak Peak at Summer 2026")
         ]
 
         for session_num, title, date_str, time, location, desc in sessions_data:
@@ -616,10 +616,10 @@ def import_educ460a():
 
         # Create assignments
         assignments_data = [
-            ("Complete the Fall Reflective Narrative: Leadership Competency Development", "Review your Fall Portfolio Feedback, the CTC CAPE CACE document and the PLI Leadership Connection Rubric to inform your reflection", "2025-02-07", 25),
-            ("Revised Fall Portfolio", "Incorporate feedback received from home group and instructors to make revisions to fall portfolio", "2025-02-06", 10),
-            ("Final Resume & Cover Letter", "Create final draft of resume and cover letter for Mock Interviews using provided resources and group feedback", "2025-02-27", 25),
-            ("Spring Portfolio", "Add leadership experiences for Spring Semester which reflect both breadth and depth of experience, including approved spring logs and revised Fall Portfolio", "2025-05-08", 50)
+            ("Complete the Fall Reflective Narrative: Leadership Competency Development", "Review your Fall Portfolio Feedback, the CTC CAPE CACE document and the PLI Leadership Connection Rubric to inform your reflection", "2026-02-07", 25),
+            ("Revised Fall Portfolio", "Incorporate feedback received from home group and instructors to make revisions to fall portfolio", "2026-02-06", 10),
+            ("Final Resume & Cover Letter", "Create final draft of resume and cover letter for Mock Interviews using provided resources and group feedback", "2026-02-27", 25),
+            ("Spring Portfolio", "Add leadership experiences for Spring Semester which reflect both breadth and depth of experience, including approved spring logs and revised Fall Portfolio", "2026-05-08", 50)
         ]
 
         for title, desc, due_date_str, points in assignments_data:
@@ -634,7 +634,7 @@ def import_educ460a():
 
         # Create readings
         readings_data = [
-            ("Metaphor as a tool in educational leadership classrooms", "Singh, K.", "", "2025-04-04", "")
+            ("Metaphor as a tool in educational leadership classrooms", "Singh, K.", "", "2026-04-04", "")
         ]
 
         for title, authors, pages, due_date_str, url in readings_data:
@@ -784,6 +784,66 @@ def cleanup_2025_dates():
         flash(f'Successfully deleted {deleted} item(s) with 2025 dates!', 'success')
     except Exception as e:
         flash(f'Error cleaning up dates: {str(e)}', 'error')
+
+    return redirect(url_for('index'))
+
+
+@app.route('/fix_all_2025_dates')
+@require_auth
+def fix_all_2025_dates():
+    """Convert all 2025 dates to 2026 across all models"""
+    try:
+        from datetime import datetime
+        from sqlalchemy import extract
+
+        db = get_db_session()
+
+        fixed_counts = {
+            'sessions': 0,
+            'assignments': 0,
+            'readings': 0,
+            'custom_items': 0
+        }
+
+        # Fix Sessions
+        sessions_2025 = db.query(Session).filter(extract('year', Session.date) == 2025).all()
+        for session in sessions_2025:
+            old_date = session.date
+            session.date = datetime(2026, old_date.month, old_date.day).date()
+            fixed_counts['sessions'] += 1
+
+        # Fix Assignments
+        assignments_2025 = db.query(Assignment).filter(extract('year', Assignment.due_date) == 2025).all()
+        for assignment in assignments_2025:
+            old_date = assignment.due_date
+            assignment.due_date = datetime(2026, old_date.month, old_date.day).date()
+            fixed_counts['assignments'] += 1
+
+        # Fix Readings
+        readings_2025 = db.query(Reading).filter(extract('year', Reading.due_date) == 2025).all()
+        for reading in readings_2025:
+            old_date = reading.due_date
+            reading.due_date = datetime(2026, old_date.month, old_date.day).date()
+            fixed_counts['readings'] += 1
+
+        # Fix Custom Items
+        custom_2025 = db.query(CustomItem).filter(extract('year', CustomItem.due_date) == 2025).all()
+        for item in custom_2025:
+            old_date = item.due_date
+            item.due_date = datetime(2026, old_date.month, old_date.day).date()
+            fixed_counts['custom_items'] += 1
+
+        db.commit()
+        db.close()
+
+        total = sum(fixed_counts.values())
+        message = f'Successfully converted {total} dates from 2025 to 2026! '
+        message += f'(Sessions: {fixed_counts["sessions"]}, Assignments: {fixed_counts["assignments"]}, '
+        message += f'Readings: {fixed_counts["readings"]}, Custom Items: {fixed_counts["custom_items"]})'
+
+        flash(message, 'success')
+    except Exception as e:
+        flash(f'Error fixing dates: {str(e)}', 'error')
 
     return redirect(url_for('index'))
 
