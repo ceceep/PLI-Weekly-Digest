@@ -71,7 +71,8 @@
             color: #003262;
         }
 
-        input[type="password"] {
+        input[type="password"],
+        input[type="email"] {
             width: 100%;
             padding: 12px;
             border: 2px solid #ddd;
@@ -79,7 +80,8 @@
             font-size: 16px;
         }
 
-        input[type="password"]:focus {
+        input[type="password"]:focus,
+        input[type="email"]:focus {
             outline: none;
             border-color: #003262;
         }
@@ -115,8 +117,8 @@
 </head>
 <body>
     <div class="login-container">
-        <h1>🔒 Admin Login</h1>
-        <p class="subtitle">Enter password to access admin functions</p>
+        <h1>🔒 Login</h1>
+        <p class="subtitle">Sign in to access your account</p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -128,8 +130,13 @@
 
         <form method="POST">
             <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required autofocus>
+            </div>
+
+            <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required autofocus>
+                <input type="password" id="password" name="password" required>
             </div>
 
             <button type="submit" class="btn">Login</button>

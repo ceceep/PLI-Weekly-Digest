@@ -5,9 +5,37 @@ from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
 Base = declarative_base()
+
+
+class User(Base):
+    """User accounts with role-based access"""
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(200), nullable=False, unique=True)
+    password_hash = Column(String(200), nullable=False)
+    name = Column(String(200))
+    role = Column(String(20), default='user')  # 'admin' or 'user'
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime)
+
+    def set_password(self, password):
+        """Hash and set password"""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """Check if password is correct"""
+        return check_password_hash(self.password_hash, password)
+
+    def is_admin(self):
+        """Check if user is admin"""
+        return self.role == 'admin'
+
 
 class Course(Base):
     """Represents a course/class"""

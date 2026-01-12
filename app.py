@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 from functools import wraps
 from models import (
-    Course, Session, Assignment, Reading, CustomItem, Subscriber, DigestHistory,
+    Course, Session, Assignment, Reading, CustomItem, Subscriber, DigestHistory, User,
     get_session as get_db_session, init_db
 )
 from syllabus_parser import SyllabusParser
@@ -22,19 +22,40 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Admin password (MUST be set in environment variables or .env file)
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
-if not ADMIN_PASSWORD:
-    raise ValueError("ADMIN_PASSWORD must be set in environment variables or .env file")
-
-# Authentication decorator
-def require_auth(f):
+# Authentication decorators
+def login_required(f):
+    """Require user to be logged in"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not session.get('authenticated'):
+        if not session.get('user_id'):
+            flash('Please log in to access this page', 'warning')
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
+
+
+def admin_required(f):
+    """Require user to be logged in as admin"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('user_id'):
+            flash('Please log in to access this page', 'warning')
+            return redirect(url_for('login', next=request.url))
+
+        db = get_db_session()
+        user = db.query(User).get(session['user_id'])
+        db.close()
+
+        if not user or not user.is_admin():
+            flash('You must be an admin to access this page', 'error')
+            return redirect(url_for('index'))
+
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# Backwards compatibility alias
+require_auth = admin_required
 
 # Initialize database
 init_db()
@@ -67,16 +88,33 @@ scheduler.start()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Admin login page"""
+    """User login page"""
     if request.method == 'POST':
+        email = request.form.get('email')
         password = request.form.get('password')
-        if password == ADMIN_PASSWORD:
-            session['authenticated'] = True
+
+        db = get_db_session()
+        user = db.query(User).filter(User.email == email).first()
+
+        if user and user.active and user.check_password(password):
+            # Update last login
+            user.last_login = datetime.utcnow()
+            db.commit()
+
+            # Set session
+            session['user_id'] = user.id
+            session['user_email'] = user.email
+            session['user_role'] = user.role
+            session['user_name'] = user.name
+
+            db.close()
+
             next_url = request.args.get('next') or url_for('index')
-            flash('Successfully logged in!', 'success')
+            flash(f'Welcome back, {user.name}!', 'success')
             return redirect(next_url)
         else:
-            flash('Incorrect password', 'error')
+            db.close()
+            flash('Invalid email or password', 'error')
 
     return render_template('login.html')
 
@@ -84,7 +122,7 @@ def login():
 @app.route('/logout')
 def logout():
     """Logout"""
-    session.pop('authenticated', None)
+    session.clear()
     flash('Logged out successfully', 'success')
     return redirect(url_for('index'))
 
@@ -124,6 +162,11 @@ def index():
     courses = db.query(Course).all()
     subscriber_count = db.query(Subscriber).filter(Subscriber.active == True).count()
 
+    # Get current user info
+    current_user = None
+    if session.get('user_id'):
+        current_user = db.query(User).get(session['user_id'])
+
     db.close()
 
     return render_template('index.html',
@@ -132,7 +175,8 @@ def index():
                          readings=upcoming_readings,
                          custom_items=upcoming_custom,
                          courses=courses,
-                         subscriber_count=subscriber_count)
+                         subscriber_count=subscriber_count,
+                         current_user=current_user)
 
 
 @app.route('/upload_syllabus', methods=['GET', 'POST'])
@@ -439,6 +483,11 @@ def calendar():
     custom_items = db.query(CustomItem).order_by(CustomItem.due_date).all()
     courses = db.query(Course).all()
 
+    # Get current user info
+    current_user = None
+    if session.get('user_id'):
+        current_user = db.query(User).get(session['user_id'])
+
     db.close()
 
     return render_template('calendar.html',
@@ -447,7 +496,8 @@ def calendar():
                          readings=readings,
                          custom_items=custom_items,
                          courses=courses,
-                         today=today)
+                         today=today,
+                         current_user=current_user)
 
 
 @app.route('/send_test_digest')
@@ -1198,6 +1248,270 @@ def add_missing_263b_readings():
         flash(f'Error adding readings: {str(e)}', 'error')
 
     return redirect(url_for('index'))
+
+
+@app.route('/users', methods=['GET', 'POST'])
+@admin_required
+def manage_users():
+    """Manage user accounts (admin only)"""
+    db = get_db_session()
+
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        name = request.form.get('name', '')
+        role = request.form['role']
+
+        # Check if user already exists
+        existing = db.query(User).filter(User.email == email).first()
+
+        if existing:
+            flash('User with this email already exists', 'warning')
+        else:
+            user = User(email=email, name=name, role=role)
+            user.set_password(password)
+            db.add(user)
+            db.commit()
+            flash(f'User {name} created successfully!', 'success')
+
+        return redirect(url_for('manage_users'))
+
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    db.close()
+
+    return render_template('users.html', users=users)
+
+
+@app.route('/toggle_user/<int:user_id>')
+@admin_required
+def toggle_user(user_id):
+    """Toggle user active status"""
+    db = get_db_session()
+    user = db.query(User).get(user_id)
+
+    if user:
+        # Don't allow deactivating yourself
+        if user.id == session.get('user_id'):
+            flash('You cannot deactivate your own account', 'warning')
+        else:
+            user.active = not user.active
+            db.commit()
+            flash(f'User {user.name} {"activated" if user.active else "deactivated"}', 'success')
+    else:
+        flash('User not found', 'error')
+
+    db.close()
+    return redirect(url_for('manage_users'))
+
+
+@app.route('/delete_user/<int:user_id>')
+@admin_required
+def delete_user(user_id):
+    """Delete a user"""
+    db = get_db_session()
+    user = db.query(User).get(user_id)
+
+    if user:
+        # Don't allow deleting yourself
+        if user.id == session.get('user_id'):
+            flash('You cannot delete your own account', 'warning')
+        else:
+            name = user.name
+            db.delete(user)
+            db.commit()
+            flash(f'User {name} deleted successfully', 'success')
+    else:
+        flash('User not found', 'error')
+
+    db.close()
+    return redirect(url_for('manage_users'))
+
+
+@app.route('/edit_session/<int:session_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_session(session_id):
+    """Edit a class session"""
+    db = get_db_session()
+    session_obj = db.query(Session).get(session_id)
+
+    if not session_obj:
+        flash('Session not found', 'error')
+        db.close()
+        return redirect(url_for('calendar'))
+
+    if request.method == 'POST':
+        session_obj.title = request.form['title']
+        session_obj.date = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+        session_obj.time = request.form.get('time', '')
+        session_obj.location = request.form.get('location', '')
+        session_obj.description = request.form.get('description', '')
+        db.commit()
+        flash('Session updated successfully', 'success')
+        db.close()
+        return redirect(url_for('calendar'))
+
+    courses = db.query(Course).all()
+    db.close()
+    return render_template('edit_session.html', session=session_obj, courses=courses)
+
+
+@app.route('/edit_assignment/<int:assignment_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_assignment(assignment_id):
+    """Edit an assignment"""
+    db = get_db_session()
+    assignment = db.query(Assignment).get(assignment_id)
+
+    if not assignment:
+        flash('Assignment not found', 'error')
+        db.close()
+        return redirect(url_for('calendar'))
+
+    if request.method == 'POST':
+        assignment.title = request.form['title']
+        assignment.description = request.form.get('description', '')
+        assignment.due_date = datetime.strptime(request.form['due_date'], '%Y-%m-%d').date()
+        assignment.points = request.form.get('points')
+        db.commit()
+        flash('Assignment updated successfully', 'success')
+        db.close()
+        return redirect(url_for('calendar'))
+
+    courses = db.query(Course).all()
+    db.close()
+    return render_template('edit_assignment.html', assignment=assignment, courses=courses)
+
+
+@app.route('/edit_reading/<int:reading_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_reading(reading_id):
+    """Edit a reading"""
+    db = get_db_session()
+    reading = db.query(Reading).get(reading_id)
+
+    if not reading:
+        flash('Reading not found', 'error')
+        db.close()
+        return redirect(url_for('calendar'))
+
+    if request.method == 'POST':
+        reading.title = request.form['title']
+        reading.authors = request.form.get('authors', '')
+        reading.pages = request.form.get('pages', '')
+        reading.due_date = datetime.strptime(request.form['due_date'], '%Y-%m-%d').date()
+        reading.citation = request.form.get('citation', '')
+        reading.url = request.form.get('url', '')
+        db.commit()
+        flash('Reading updated successfully', 'success')
+        db.close()
+        return redirect(url_for('calendar'))
+
+    courses = db.query(Course).all()
+    db.close()
+    return render_template('edit_reading.html', reading=reading, courses=courses)
+
+
+@app.route('/edit_custom/<int:item_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_custom_item(item_id):
+    """Edit a custom item"""
+    db = get_db_session()
+    item = db.query(CustomItem).get(item_id)
+
+    if not item:
+        flash('Item not found', 'error')
+        db.close()
+        return redirect(url_for('calendar'))
+
+    if request.method == 'POST':
+        item.title = request.form['title']
+        item.description = request.form.get('description', '')
+        item.due_date = datetime.strptime(request.form['due_date'], '%Y-%m-%d').date()
+        item.category = request.form['category']
+        db.commit()
+        flash('Custom item updated successfully', 'success')
+        db.close()
+        return redirect(url_for('calendar'))
+
+    courses = db.query(Course).all()
+    db.close()
+    return render_template('edit_custom_item.html', item=item, courses=courses)
+
+
+@app.route('/delete_session/<int:session_id>')
+@admin_required
+def delete_session(session_id):
+    """Delete a session"""
+    db = get_db_session()
+    session_obj = db.query(Session).get(session_id)
+
+    if session_obj:
+        title = session_obj.title
+        db.delete(session_obj)
+        db.commit()
+        flash(f'Session "{title}" deleted successfully', 'success')
+    else:
+        flash('Session not found', 'error')
+
+    db.close()
+    return redirect(url_for('calendar'))
+
+
+@app.route('/delete_assignment/<int:assignment_id>')
+@admin_required
+def delete_assignment(assignment_id):
+    """Delete an assignment"""
+    db = get_db_session()
+    assignment = db.query(Assignment).get(assignment_id)
+
+    if assignment:
+        title = assignment.title
+        db.delete(assignment)
+        db.commit()
+        flash(f'Assignment "{title}" deleted successfully', 'success')
+    else:
+        flash('Assignment not found', 'error')
+
+    db.close()
+    return redirect(url_for('calendar'))
+
+
+@app.route('/delete_reading/<int:reading_id>')
+@admin_required
+def delete_reading(reading_id):
+    """Delete a reading"""
+    db = get_db_session()
+    reading = db.query(Reading).get(reading_id)
+
+    if reading:
+        title = reading.title
+        db.delete(reading)
+        db.commit()
+        flash(f'Reading "{title}" deleted successfully', 'success')
+    else:
+        flash('Reading not found', 'error')
+
+    db.close()
+    return redirect(url_for('calendar'))
+
+
+@app.route('/delete_custom/<int:item_id>')
+@admin_required
+def delete_custom_item(item_id):
+    """Delete a custom item"""
+    db = get_db_session()
+    item = db.query(CustomItem).get(item_id)
+
+    if item:
+        title = item.title
+        db.delete(item)
+        db.commit()
+        flash(f'Item "{title}" deleted successfully', 'success')
+    else:
+        flash('Item not found', 'error')
+
+    db.close()
+    return redirect(url_for('calendar'))
 
 
 @app.route('/add_cohort25_subscribers')
