@@ -86,6 +86,139 @@ scheduler.add_job(
 scheduler.start()
 
 
+@app.route('/setup_admin', methods=['GET', 'POST'])
+def setup_admin():
+    """One-time setup route to create initial admin user"""
+    # Security: Require setup token from environment variable
+    setup_token = os.getenv('SETUP_TOKEN', 'pli-setup-2026')
+    provided_token = request.args.get('token') or request.form.get('token')
+
+    if provided_token != setup_token:
+        return "Invalid setup token", 403
+
+    db = get_db_session()
+
+    # Check if any admin users already exist
+    existing_admin = db.query(User).filter_by(role='admin').first()
+    if existing_admin:
+        db.close()
+        return """
+        <html><body style='font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;'>
+        <h2>⚠️ Setup Already Complete</h2>
+        <p>An admin user already exists. Please log in at <a href='/login'>/login</a></p>
+        </body></html>
+        """, 400
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        name = request.form.get('name')
+        password = request.form.get('password')
+
+        # Create admin user
+        user = User(
+            email=email,
+            name=name,
+            role='admin'
+        )
+        user.set_password(password)
+
+        db.add(user)
+        db.commit()
+        db.close()
+
+        return f"""
+        <html><body style='font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;'>
+        <h2>✅ Admin User Created!</h2>
+        <p>Admin user <strong>{email}</strong> has been created successfully.</p>
+        <p><a href='/login' style='display: inline-block; padding: 10px 20px; background: #003262; color: white; text-decoration: none; border-radius: 4px;'>Go to Login</a></p>
+        </body></html>
+        """
+
+    db.close()
+
+    # Show setup form
+    return f"""
+    <html>
+    <head>
+        <title>Admin Setup - PLI Weekly Digest</title>
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                max-width: 500px;
+                margin: 50px auto;
+                padding: 20px;
+                background: #f5f5f5;
+            }}
+            .card {{
+                background: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }}
+            h1 {{
+                color: #003262;
+                margin-top: 0;
+            }}
+            .form-group {{
+                margin-bottom: 15px;
+            }}
+            label {{
+                display: block;
+                margin-bottom: 5px;
+                font-weight: 600;
+                color: #003262;
+            }}
+            input {{
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                box-sizing: border-box;
+            }}
+            button {{
+                width: 100%;
+                padding: 12px;
+                background: #003262;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                margin-top: 10px;
+            }}
+            button:hover {{
+                background: #002147;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>🔧 Admin Setup</h1>
+            <p>Create the initial admin user for PLI Weekly Digest</p>
+            <form method="POST">
+                <input type="hidden" name="token" value="{provided_token}">
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" required value="cecee_penney@berkeley.edu">
+                </div>
+                <div class="form-group">
+                    <label for="name">Full Name *</label>
+                    <input type="text" id="name" name="name" required value="Cecee Penney">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password *</label>
+                    <input type="password" id="password" name="password" required minlength="8">
+                </div>
+                <button type="submit">Create Admin User</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    """
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """User login page"""
@@ -487,10 +620,6 @@ def calendar():
     current_user = None
     if session.get('user_id'):
         current_user = db.query(User).get(session['user_id'])
-        print(f"DEBUG: Calendar - User logged in: {current_user.email if current_user else 'None'}")
-        print(f"DEBUG: Calendar - Is admin: {current_user.is_admin() if current_user else 'N/A'}")
-    else:
-        print("DEBUG: Calendar - No user_id in session")
 
     db.close()
 
