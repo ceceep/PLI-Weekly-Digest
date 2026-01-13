@@ -75,7 +75,8 @@
         }
 
         input[type="email"],
-        input[type="text"] {
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
             padding: 12px;
             border: 2px solid #ddd;
@@ -85,7 +86,8 @@
         }
 
         input[type="email"]:focus,
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        input[type="password"]:focus {
             outline: none;
             border-color: #003262;
         }
@@ -168,27 +170,35 @@
             </div>
 
             <div class="form-group">
-                <label for="name">Name (optional)</label>
-                <input type="text" id="name" name="name"
+                <label for="name">Name *</label>
+                <input type="text" id="name" name="name" required
                        placeholder="Your Name">
             </div>
 
-            <button type="submit" class="btn">Subscribe</button>
+            <div class="form-group">
+                <label for="password">Password *</label>
+                <input type="password" id="password" name="password" required minlength="8"
+                       placeholder="Create a password (min 8 characters)">
+            </div>
+
+            <button type="submit" class="btn">Subscribe & Create Account</button>
         </form>
 
         <div class="features">
-            <h2>What you'll receive:</h2>
+            <h2>What you'll get:</h2>
             <ul class="feature-list">
+                <li><strong>Website Access:</strong> Log in to view all assignments, readings, and sessions</li>
                 <li><strong>Weekly Digest:</strong> Every Sunday at 8:00am PT</li>
                 <li><strong>Daily Reminders:</strong> Every evening at 6:00pm PT for items due tomorrow</li>
-                <li>All course assignments, readings, and sessions in one place</li>
+                <li>Interactive calendar with all course deadlines</li>
                 <li>Custom reminders for group payments, events, and more</li>
                 <li>Beautiful HTML emails that work on any device</li>
             </ul>
         </div>
 
         <div class="footer">
-            <p>Built by a PLI classmate to help us all stay organized</p>
+            <p>Already have an account? <a href="/login" style="color: #003262; font-weight: 600;">Log in here</a></p>
+            <p style="margin-top: 15px;">Built by a PLI classmate to help us all stay organized</p>
             <p style="margin-top: 8px;">Questions? Email cecee.penney@gmail.com</p>
         </div>
     </div>

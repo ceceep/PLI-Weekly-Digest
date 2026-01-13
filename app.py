@@ -504,31 +504,48 @@ def toggle_complete(item_type, item_id):
 
 @app.route('/subscribe', methods=['GET', 'POST'])
 def subscribe():
-    """Public subscription page for classmates"""
+    """Public subscription page for classmates - creates both subscriber and user account"""
     db = get_db_session()
 
     if request.method == 'POST':
         email = request.form['email']
         name = request.form.get('name', '')
+        password = request.form.get('password', '')
 
-        # Check if already exists
-        existing = db.query(Subscriber).filter(Subscriber.email == email).first()
+        # Check if user already exists
+        existing_user = db.query(User).filter(User.email == email).first()
+        existing_subscriber = db.query(Subscriber).filter(Subscriber.email == email).first()
 
-        if existing:
-            if existing.active:
-                flash('You are already subscribed! Check your email for digests every Sunday at 8am.', 'warning')
+        if existing_user:
+            flash('An account with this email already exists. Please log in.', 'warning')
+            db.close()
+            return redirect(url_for('login'))
+
+        # Create user account
+        user = User(
+            email=email,
+            name=name,
+            role='user'  # Regular user, not admin
+        )
+        user.set_password(password)
+        db.add(user)
+
+        # Create or reactivate subscriber
+        if existing_subscriber:
+            if not existing_subscriber.active:
+                existing_subscriber.active = True
+                existing_subscriber.name = name  # Update name if changed
+                flash('Welcome back! Your subscription and account have been reactivated.', 'success')
             else:
-                existing.active = True
-                db.commit()
-                flash('Welcome back! Your subscription has been reactivated.', 'success')
+                flash('You are already subscribed! Your account has been created. You can now log in.', 'success')
         else:
             subscriber = Subscriber(email=email, name=name)
             db.add(subscriber)
-            db.commit()
-            flash('Success! You are now subscribed. Check your email for the weekly digest every Sunday at 8am PT.', 'success')
+            flash('Success! Your account has been created. You can now log in to access the site.', 'success')
 
+        db.commit()
         db.close()
-        return redirect(url_for('subscribe'))
+        return redirect(url_for('login'))
 
     db.close()
     return render_template('subscribe.html')
