@@ -487,6 +487,10 @@ def calendar():
     current_user = None
     if session.get('user_id'):
         current_user = db.query(User).get(session['user_id'])
+        print(f"DEBUG: Calendar - User logged in: {current_user.email if current_user else 'None'}")
+        print(f"DEBUG: Calendar - Is admin: {current_user.is_admin() if current_user else 'N/A'}")
+    else:
+        print("DEBUG: Calendar - No user_id in session")
 
     db.close()
 
