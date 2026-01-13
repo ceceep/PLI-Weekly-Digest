@@ -1350,7 +1350,10 @@ def edit_session(session_id):
         db.close()
         return redirect(url_for('calendar'))
 
+    # Access related objects before closing the database
     courses = db.query(Course).all()
+    # Trigger loading of the course relationship
+    _ = session_obj.course
     db.close()
     return render_template('edit_session.html', session=session_obj, courses=courses)
 
@@ -1377,7 +1380,10 @@ def edit_assignment(assignment_id):
         db.close()
         return redirect(url_for('calendar'))
 
+    # Access related objects before closing the database
     courses = db.query(Course).all()
+    # Trigger loading of the course relationship
+    _ = assignment.course
     db.close()
     return render_template('edit_assignment.html', assignment=assignment, courses=courses)
 
@@ -1406,7 +1412,10 @@ def edit_reading(reading_id):
         db.close()
         return redirect(url_for('calendar'))
 
+    # Access related objects before closing the database
     courses = db.query(Course).all()
+    # Trigger loading of the course relationship
+    _ = reading.course
     db.close()
     return render_template('edit_reading.html', reading=reading, courses=courses)
 
@@ -1433,7 +1442,10 @@ def edit_custom_item(item_id):
         db.close()
         return redirect(url_for('calendar'))
 
+    # Access related objects before closing the database
     courses = db.query(Course).all()
+    # Trigger loading of the course relationship
+    _ = item.course
     db.close()
     return render_template('edit_custom_item.html', item=item, courses=courses)
 
