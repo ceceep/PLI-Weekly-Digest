@@ -250,6 +250,8 @@
         font-size: 0.85rem;
         text-decoration: none;
         transition: all 0.2s;
+        border: none;
+        cursor: pointer;
     }
 
     .edit-btn {
@@ -268,6 +270,7 @@
 
     .delete-btn:hover {
         background: #c82333;
+        transform: scale(1.05);
     }
 </style>
 
@@ -401,16 +404,16 @@
                         <div class="admin-controls">
                             {% if item_type == 'session' %}
                                 <a href="{{ url_for('edit_session', session_id=item.id) }}" class="edit-btn">✏️ Edit</a>
-                                <a href="{{ url_for('delete_session', session_id=item.id) }}" class="delete-btn" onclick="return confirm('Delete this session?');">🗑️ Delete</a>
+                                <button class="delete-btn" onclick="if(confirm('Delete this session?')){window.location.href='{{ url_for('delete_session', session_id=item.id) }}';}">🗑️ Delete</button>
                             {% elif item_type == 'assignment' %}
                                 <a href="{{ url_for('edit_assignment', assignment_id=item.id) }}" class="edit-btn">✏️ Edit</a>
-                                <a href="{{ url_for('delete_assignment', assignment_id=item.id) }}" class="delete-btn" onclick="return confirm('Delete this assignment?');">🗑️ Delete</a>
+                                <button class="delete-btn" onclick="if(confirm('Delete this assignment?')){window.location.href='{{ url_for('delete_assignment', assignment_id=item.id) }}';}">🗑️ Delete</button>
                             {% elif item_type == 'reading' %}
                                 <a href="{{ url_for('edit_reading', reading_id=item.id) }}" class="edit-btn">✏️ Edit</a>
-                                <a href="{{ url_for('delete_reading', reading_id=item.id) }}" class="delete-btn" onclick="return confirm('Delete this reading?');">🗑️ Delete</a>
+                                <button class="delete-btn" onclick="if(confirm('Delete this reading?')){window.location.href='{{ url_for('delete_reading', reading_id=item.id) }}';}">🗑️ Delete</button>
                             {% elif item_type == 'custom' %}
                                 <a href="{{ url_for('edit_custom_item', item_id=item.id) }}" class="edit-btn">✏️ Edit</a>
-                                <a href="{{ url_for('delete_custom_item', item_id=item.id) }}" class="delete-btn" onclick="return confirm('Delete this item?');">🗑️ Delete</a>
+                                <button class="delete-btn" onclick="if(confirm('Delete this item?')){window.location.href='{{ url_for('delete_custom_item', item_id=item.id) }}';}">🗑️ Delete</button>
                             {% endif %}
                         </div>
                     {% endif %}
