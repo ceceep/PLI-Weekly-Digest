@@ -261,6 +261,7 @@ def logout():
 
 
 @app.route('/')
+@login_required
 def index():
     """Home page with dashboard"""
     db = get_db_session()
@@ -413,6 +414,7 @@ def manual_entry():
 
 
 @app.route('/course/<int:course_id>')
+@login_required
 def view_course(course_id):
     """View course details"""
     db = get_db_session()
@@ -471,6 +473,7 @@ def custom_items():
 
 
 @app.route('/toggle_complete/<item_type>/<int:item_id>')
+@login_required
 def toggle_complete(item_type, item_id):
     """Toggle completion status of an item"""
     db = get_db_session()
@@ -561,6 +564,7 @@ def subscribers():
 
 
 @app.route('/toggle_subscriber/<int:sub_id>')
+@login_required
 def toggle_subscriber(sub_id):
     """Toggle subscriber active status"""
     db = get_db_session()
@@ -578,6 +582,7 @@ def toggle_subscriber(sub_id):
 
 
 @app.route('/history')
+@login_required
 def history():
     """View past digest emails"""
     db = get_db_session()
@@ -588,6 +593,7 @@ def history():
 
 
 @app.route('/preview_digest')
+@login_required
 def preview_digest():
     """Preview what the weekly digest will look like"""
     generator = GmailDigestGenerator()
@@ -602,6 +608,7 @@ def preview_digest():
 
 
 @app.route('/calendar')
+@login_required
 def calendar():
     """Year-at-a-glance calendar view"""
     db = get_db_session()
@@ -634,6 +641,7 @@ def calendar():
 
 
 @app.route('/send_test_digest')
+@login_required
 def send_test_digest():
     """Manually trigger sending the weekly digest (for testing)"""
     try:
